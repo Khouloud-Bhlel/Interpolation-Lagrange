@@ -15,16 +15,16 @@ echo "Available files: $(ls -la)"
 
 # Install dependencies (use Vercel-optimized requirements)
 echo "Installing dependencies..."
-if [ -f "requirements-vercel.txt" ]; then
-    echo "Using Vercel-specific requirements..."
-    pip install -r requirements-vercel.txt
-elif [ -f "requirements-minimal.txt" ]; then
-    echo "Using minimal requirements..."
-    pip install -r requirements-minimal.txt
-else
-    echo "Using standard requirements..."
-    pip install -r requirements.txt
-fi
+# Force install core dependencies one by one for better error tracking
+pip install Django==4.2.16 || exit 1
+pip install djangorestframework==3.15.2 || exit 1
+pip install django-cors-headers==4.3.1 || exit 1
+pip install python-decouple==3.8 || exit 1
+pip install numpy==1.26.4 || exit 1
+pip install requests==2.31.0 || exit 1
+pip install whitenoise==6.6.0 || exit 1
+
+echo "Core dependencies installed successfully"
 
 # Verify Django installation
 echo "Verifying Django installation..."
@@ -74,6 +74,11 @@ echo "Creating optimized build directory..."
 mkdir -p staticfiles_build
 cp -r staticfiles/* staticfiles_build/ 2>/dev/null || echo "No static files to copy"
 
-echo "Build completed successfully!"
+# Final verification
+echo "=== Build Verification ==="
+echo "Python version: $(python --version)"
+echo "Django version: $(python -c 'import django; print(django.VERSION)')"
+echo "Static files count: $(find staticfiles_build -type f | wc -l)"
+echo "Build directory contents: $(ls -la staticfiles_build/ | head -10)"
 
-echo "Build completed!"
+echo "=== Build completed successfully! ==="
