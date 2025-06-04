@@ -153,3 +153,4 @@ test_*.py
 # Local config files
 config/local_*
 *.local.conf
+.vercel
