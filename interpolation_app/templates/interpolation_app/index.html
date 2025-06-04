@@ -871,6 +871,9 @@
                 return;
             }
 
+            // Reset animation state and clear previous results
+            resetAnimationState();
+            
             // Update info text
             updateDegreeInfo();
 
@@ -901,6 +904,61 @@
             setTimeout(() => {
                 checkPointsComplete();
             }, 500);
+        }
+
+        // Add new function to reset animation state
+        function resetAnimationState() {
+            // Reset animation variables
+            currentStep = 0;
+            isPlaying = false;
+            lagrangeTerms = [];
+            currentLjIndex = 0;
+            
+            // Clear animation elements and timelines
+            clearAnimationElements();
+            
+            // Reset step counter
+            updateStepCounter(0);
+            
+            // Hide result sections
+            document.getElementById('resultSection').style.display = 'none';
+            document.getElementById('sendOdooBtn').style.display = 'none';
+            document.getElementById('errorMessage').style.display = 'none';
+            
+            // Reset animation container content
+            document.getElementById('explanationText').innerHTML = `
+                <h4><i class="fas fa-info-circle"></i> Bienvenue dans le calculateur d'interpolation de Lagrange!</h4>
+                <p>Saisissez le degré du polynôme et cliquez sur "Générer Points", puis "Calculer l'Interpolation" pour voir comment construire le polynôme pas à pas.</p>
+                <p><strong>Objectif:</strong> Trouver un polynôme P(x) qui passe exactement par tous les points donnés.</p>
+            `;
+            
+            // Reset equation display
+            document.getElementById('equationDisplay').innerHTML = `
+                $$P(x) = \\sum_{j=0}^{n} f(x_j) \\cdot l_j(x)$$
+            `;
+            document.getElementById('equationDisplay').style.display = 'flex';
+            
+            // Clear points visualization
+            document.getElementById('pointsVisualization').innerHTML = '';
+            document.getElementById('pointsVisualization').style.display = 'grid';
+            
+            // Hide and clear advanced sections
+            document.getElementById('lagrangeFraction').style.display = 'none';
+            document.getElementById('lagrangeTerms').style.display = 'none';
+            document.getElementById('calculationSteps').style.display = 'none';
+            
+            // Clear global calculation variables
+            window.polynomialCoefficients = null;
+            window.evaluationPoints = null;
+            window.evaluationResults = null;
+            window.apiEvaluationPoint = null;
+            
+            // Re-render initial MathJax
+            safeMathJaxRender([document.getElementById('equationDisplay')]);
+            
+            // Show next button for new calculation
+            document.getElementById('nextBtn').style.display = 'inline-flex';
+            document.getElementById('nextBtn').innerHTML = '<i class="fas fa-step-forward"></i> Étape Suivante';
         }
 
         function checkPointsComplete() {
@@ -976,7 +1034,7 @@
             }
             
             errorDiv.innerHTML = enhancedMessage.replace(/\n/g, '<br>');
-            errorDiv.style.background = 'linear-gradient(135deg, #f44336 0%, #e57373 100%)';
+            errorDiv.style.background = 'linear-gradient(135deg, #f44336 0%, #ee5a52 100%)';
             errorDiv.style.display = 'block';
             gsap.fromTo(errorDiv, { opacity: 0, y: -20 }, { opacity: 1, y: 0, duration: 0.5 });
             
@@ -1406,7 +1464,7 @@
                 const evaluationPoint = window.apiEvaluationPoint !== undefined ? window.apiEvaluationPoint : 
                     (term.evaluationPoint !== undefined ? term.evaluationPoint : 0);
                 const numericalResult = term.lagrangeValueAtX0 !== undefined ? 
-                    term.lagrangeValueAtX0.toFixed(6) : 'Calculé par Python';
+                    formatDecimal(term.lagrangeValueAtX0) : 'Calculé par Python';
                 
                 // Show simplified calculations with the "=" and numerical result
                 termBox.innerHTML = `
@@ -1870,7 +1928,17 @@
                 
                 // Start animation sequence
                 totalSteps = 6;
-                startAnimation();
+                // Reset to step 1 (not step 0) when recalculating
+                clearAnimationElements();
+                currentStep = 0;  // Start from 0 so nextStep() will go to step 1
+                currentLjIndex = 0;
+                updateStepCounter(1); // Show step 1 in counter
+                document.getElementById('resultSection').style.display = 'none';
+                document.getElementById('sendOdooBtn').style.display = 'none';
+                document.getElementById('errorMessage').style.display = 'none';
+                isPlaying = true;
+                // Go directly to step 1
+                step1ExplainRules();
                 
             } catch (error) {
                 showError(error.message);
