@@ -1,6 +1,31 @@
 # Vercel
 .vercel
 
+# Virtual environments
+lagrange_env/
+venv/
+env/
+
+# Development and test files
+test/
+*.pdf
+DOCUMENTATION_*.md
+IMPLEMENTATION_*.md
+ENHANCED_*.md
+
+# Odoo-specific files (not needed for main app)
+addons/
+config/
+docker-compose.yml
+init-db.sh
+
+# Database files
+*.sqlite3
+db.sqlite3
+
+# Environment files
+.env
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
