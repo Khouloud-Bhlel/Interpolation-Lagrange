@@ -33,6 +33,20 @@ ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1').split(','
 if os.environ.get('VERCEL'):
     ALLOWED_HOSTS.extend(['.vercel.app', '.now.sh'])
     DEBUG = False
+    
+    # Ensure we have required environment variables for Vercel
+    if not config('SECRET_KEY', default=None):
+        # Generate a temporary secret key if none is provided
+        from django.core.management.utils import get_random_secret_key
+        SECRET_KEY = get_random_secret_key()
+    
+    # Database for Vercel (use SQLite for simplicity)
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': '/tmp/db.sqlite3',  # Use tmp directory on Vercel
+        }
+    }
 
 
 # Application definition

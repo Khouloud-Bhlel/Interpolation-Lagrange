@@ -3,7 +3,7 @@
   "name": "lagrange-animator",
   "builds": [
     {
-      "src": "lagrange_project/wsgi.py",
+      "src": "api/index.py",
       "use": "@vercel/python",
       "config": { 
         "maxLambdaSize": "15mb", 
@@ -28,11 +28,16 @@
       "dest": "/media/$1"
     },
     {
+      "src": "/favicon.ico",
+      "dest": "/static/favicon.ico"
+    },
+    {
       "src": "/(.*)",
-      "dest": "lagrange_project/wsgi.py"
+      "dest": "/api/index.py"
     }
   ],
   "env": {
-    "VERCEL": "1"
+    "VERCEL": "1",
+    "PYTHON_PATH": "/var/task"
   }
 }
