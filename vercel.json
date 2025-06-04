@@ -1,6 +1,5 @@
 {
   "version": 2,
-  "name": "lagrange-animator",
   "builds": [
     {
       "src": "api/index.py",

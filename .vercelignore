@@ -12,6 +12,22 @@ test/
 DOCUMENTATION_*.md
 IMPLEMENTATION_*.md
 ENHANCED_*.md
+*_COMPLETE.md
+*_GUIDE.md
+*_FIX.md
+*_CHECKLIST.md
+*_README.md
+
+# Documentation files
+FAVICON_*.md
+CORS_*.md
+VERCEL_*.md
+GITHUB_*.md
+FINAL_*.md
+
+# Scripts and setup files
+setup-vercel.sh
+get-vercel-ids.sh
 
 # Odoo-specific files (not needed for main app)
 addons/
@@ -25,10 +41,26 @@ db.sqlite3
 
 # Environment files
 .env
+.env.example
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
+*$py.class
+
+# Development static files (will be rebuilt)
+static/
+
+# Git files
+.git/
+.gitignore
+
+# Node modules (if any)
+node_modules/
+
+# Logs
+*.log
+logs/
 *$py.class
 
 # C extensions
