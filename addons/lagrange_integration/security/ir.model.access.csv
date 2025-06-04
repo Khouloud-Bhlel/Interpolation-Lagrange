@@ -1,0 +1,4 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_interpolation_point,access_interpolation_point,model_lagrange_interpolation_point,base.group_user,1,1,1,1
+access_interpolation_set,access_interpolation_set,model_lagrange_interpolation_set,base.group_user,1,1,1,1
+access_interpolation_result,access_interpolation_result,model_lagrange_interpolation_result,base.group_user,1,1,1,1

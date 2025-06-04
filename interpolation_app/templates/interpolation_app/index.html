@@ -1,0 +1,1928 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Animateur d'Interpolation de Lagrange - Démonstration Interactive</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>
+        // Enhanced MathJax configuration with proper initialization
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            svg: {
+                fontCache: 'global'
+            },
+            startup: {
+                ready: () => {
+                    console.log('MathJax is loaded and ready.');
+                    MathJax.startup.defaultReady();
+                }
+            }
+        };
+
+        // Helper function to safely render MathJax
+        function safeMathJaxRender(elements) {
+            return new Promise((resolve) => {
+                if (typeof MathJax !== 'undefined' && MathJax.typesetPromise) {
+                    MathJax.typesetPromise(elements).then(resolve).catch((error) => {
+                        console.warn('MathJax rendering error:', error);
+                        resolve();
+                    });
+                } else {
+                    // Fallback: wait for MathJax to load
+                    const checkMathJax = setInterval(() => {
+                        if (typeof MathJax !== 'undefined' && MathJax.typesetPromise) {
+                            clearInterval(checkMathJax);
+                            MathJax.typesetPromise(elements).then(resolve).catch((error) => {
+                                console.warn('MathJax rendering error:', error);
+                                resolve();
+                            });
+                        }
+                    }, 100);
+                    
+                    // Timeout after 5 seconds
+                    setTimeout(() => {
+                        clearInterval(checkMathJax);
+                        console.warn('MathJax failed to load within timeout');
+                        resolve();
+                    }, 5000);
+                }
+            });
+        }
+    </script>
+    <style>
+        /* Global Reset */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* Body and Main Container Styles */
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            color: #333;
+        }
+
+        .main-container {
+            max-width: 1200px;
+            width: 100%;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 25px;
+            box-shadow: 0 25px 80px rgba(0,0,0,0.2);
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        /* Header Styles */
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="20" cy="20" r="2" fill="rgba(255,255,255,0.1)"/><circle cx="80" cy="40" r="3" fill="rgba(255,255,255,0.1)"/><circle cx="40" cy="80" r="2" fill="rgba(255,255,255,0.1)"/><circle cx="60" cy="10" r="1.5" fill="rgba(255,255,255,0.1)"/><circle cx="10" cy="60" r="2.5" fill="rgba(255,255,255,0.1)"/></svg>');
+            background-size: 100px;
+            animation: float 20s infinite linear;
+            z-index: 1;
+        }
+
+        @keyframes float {
+            0% { transform: translate(0px, 0px) rotate(0deg); }
+            100% { transform: translate(100px, -100px) rotate(360deg); }
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+            text-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            position: relative;
+            z-index: 2;
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.95;
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Content Area */
+        .content {
+            padding: 40px;
+        }
+
+        /* Input Section */
+        .input-section {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(102, 126, 234, 0.2);
+        }
+
+        .input-section h2 {
+            color: #667eea;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.8rem;
+        }
+
+        .points-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        .point-input {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .point-input:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(102, 126, 234, 0.2);
+            border-color: rgba(102, 126, 234, 0.3);
+        }
+
+        .point-input label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #333;
+            font-size: 1rem;
+        }
+
+        .point-input input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .point-input input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            transform: scale(1.02);
+        }
+
+        /* Buttons */
+        .button-group {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.4s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            position: relative;
+            overflow: hidden;
+            color: white;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            box-shadow: 0 10px 25px rgba(79, 172, 254, 0.3);
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+        }
+
+        .btn:active {
+            transform: translateY(-1px);
+        }
+
+        /* Error Message */
+        .error-message {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            margin: 20px 0;
+            display: none;
+            border-left: 5px solid #c92a2a;
+            box-shadow: 0 10px 30px rgba(255, 107, 107, 0.3);
+            font-weight: 600;
+            text-align: center;
+        }
+
+        /* Result Section */
+        .result-section {
+            background: linear-gradient(135deg, rgba(76, 175, 80, 0.1) 0%, rgba(139, 195, 74, 0.1) 100%);
+            border-radius: 20px;
+            padding: 30px;
+            margin: 25px 0;
+            display: none;
+            border: 2px solid rgba(76, 175, 80, 0.2);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .result-section h3 {
+            color: #4caf50;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.6rem;
+            justify-content: center;
+        }
+
+        .result-section #finalResult {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #333;
+            text-align: center;
+            word-break: break-all;
+        }
+
+        /* Animation Container */
+        .animation-container {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 249, 250, 0.9) 100%);
+            border: 3px dashed #667eea;
+            border-radius: 20px;
+            padding: 40px;
+            margin: 30px 0;
+            min-height: 600px;
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(5px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+        }
+
+        .animation-content {
+            position: relative;
+            z-index: 2;
+        }
+
+        .step-counter {
+            position: absolute;
+            top: 25px;
+            right: 25px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 25px;
+            font-weight: bold;
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+            z-index: 4;
+            font-size: 1rem;
+        }
+
+        .step-explanation {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            border-left: 5px solid #667eea;
+            transition: all 0.3s ease;
+            font-size: 1.1rem;
+            line-height: 1.6;
+        }
+
+        .step-explanation:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+        }
+
+        .step-explanation h4 {
+            color: #667eea;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.4rem;
+            font-weight: 700;
+        }
+
+        .math-equation {
+            background: linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%);
+            border-radius: 15px;
+            padding: 25px;
+            margin: 20px 0;
+            text-align: center;
+            border: 2px solid #ffc107;
+            box-shadow: 0 8px 25px rgba(255, 193, 7, 0.2);
+            font-size: 1.8rem;
+            font-weight: 600;
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Animated Elements */
+        .animated-number, .animated-term {
+            display: inline-block;
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 25px;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+            transition: all 0.3s ease;
+            position: absolute;
+            z-index: 5;
+            font-size: 1.3rem;
+        }
+
+        .animated-term {
+            background: linear-gradient(135deg, #4caf50 0%, #66bb6a 100%);
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+        }
+
+        /* SVG Arrow Styles */
+        .animation-svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 3;
+        }
+
+        .animated-arrow {
+            stroke: #ff4444;
+            stroke-width: 3;
+            fill: none;
+            marker-end: url(#arrowhead);
+            opacity: 0;
+        }
+
+        .animation-svg #arrowhead polygon {
+            fill: #ff4444;
+        }
+
+        /* Control Buttons */
+        .control-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-top: 25px;
+        }
+
+        .btn-control {
+            background: linear-gradient(135deg, #6c757d 0%, #868e96 100%);
+            color: white;
+            box-shadow: 0 8px 20px rgba(108, 117, 125, 0.3);
+        }
+
+        .btn-control:hover {
+            background: linear-gradient(135deg, #868e96 0%, #6c757d 100%);
+        }
+
+        /* Points Visualization */
+        .points-visualization {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 20px;
+            margin: 25px 0;
+        }
+
+        .point-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            border: 2px solid #e0e0e0;
+            transition: all 0.4s ease;
+            font-size: 0.95rem;
+        }
+
+        .point-card.active {
+            border-color: #667eea;
+            transform: scale(1.08);
+            box-shadow: 0 15px 40px rgba(102, 126, 234, 0.4);
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+        }
+
+        .point-card h5 {
+            color: #667eea;
+            margin-bottom: 12px;
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+
+        /* Additional styles for the enhanced UI */
+        .calculation-steps {
+            background: linear-gradient(135deg, rgba(156, 39, 176, 0.05) 0%, rgba(233, 30, 99, 0.05) 100%);
+            border-radius: 20px;
+            padding: 25px;
+            margin: 25px 0;
+            border: 2px solid rgba(156, 39, 176, 0.1);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.05);
+            display: none;
+        }
+
+        .lagrange-terms {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+            margin: 25px 0;
+        }
+
+        .term-box {
+            background: linear-gradient(135deg, rgba(156, 39, 176, 0.1) 0%, rgba(233, 30, 99, 0.1) 100%);
+            border: 2px solid #9c27b0;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            min-width: 180px;
+            transition: all 0.4s ease;
+            box-shadow: 0 8px 25px rgba(156, 39, 176, 0.2);
+            font-size: 1.1rem;
+        }
+
+        .term-box.active {
+            transform: scale(1.15);
+            box-shadow: 0 15px 40px rgba(156, 39, 176, 0.4);
+            background: linear-gradient(135deg, rgba(156, 39, 176, 0.2) 0%, rgba(233, 30, 99, 0.2) 100%);
+        }
+
+        /* Degree Input Container */
+        .degree-input-container {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 25px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .degree-input-container:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(102, 126, 234, 0.2);
+            border-color: rgba(102, 126, 234, 0.3);
+        }
+
+        /* Lagrange Fraction Display */
+        .lagrange-fraction {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 249, 250, 0.9) 100%);
+            border: 2px solid #667eea;
+            border-radius: 15px;
+            padding: 30px;
+            margin: 20px 0;
+            text-align: center;
+            min-height: 250px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .fraction-numerator, .fraction-denominator {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin: 15px 0;
+            min-height: 60px;
+        }
+
+        .fraction-line {
+            width: 90%;
+            height: 4px;
+            background: #667eea;
+            margin: 15px 0;
+            border-radius: 2px;
+        }
+
+        .fraction-term {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 18px;
+            border-radius: 25px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin: 5px;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .fraction-term:hover {
+            transform: scale(1.05);
+        }
+
+        .fraction-operator {
+            font-size: 1.8rem;
+            color: #667eea;
+            font-weight: bold;
+            margin: 0 8px;
+        }
+
+        /* Keyframe Animations */
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .pulse {
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-10px); }
+            60% { transform: translateY(-5px); }
+        }
+
+        .point-arrow {
+            text-align: center;
+            margin-top: 8px;
+        }
+
+        .point-arrow i {
+            color: #667eea;
+            font-size: 1.2rem;
+            animation: bounce 1.5s infinite;
+        }
+
+        /* Responsive Adjustments */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            .main-container {
+                border-radius: 15px;
+                padding: 0;
+            }
+            .header {
+                padding: 30px 20px;
+            }
+            .header h1 {
+                font-size: 2rem;
+            }
+            .content {
+                padding: 20px;
+            }
+            .points-container {
+                grid-template-columns: 1fr;
+            }
+            .button-group, .control-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+            .btn {
+                width: 100%;
+                margin-bottom: 10px;
+            }
+            .animation-container {
+                padding: 20px;
+                min-height: 500px;
+            }
+        }
+
+        /* Add loading indicator for MathJax */
+        .math-loading {
+            color: #667eea;
+            font-style: italic;
+            text-align: center;
+            padding: 20px;
+        }
+        /* Degree Input Field Styling */
+.degree-input-container {
+    background: white;
+    border-radius: 15px;
+    padding: 20px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+    border: 2px solid transparent;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 20px; /* Space between degree input and points */
+}
+
+.degree-input-container:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 40px rgba(102, 126, 234, 0.2);
+    border-color: rgba(102, 126, 234, 0.3);
+}
+
+.degree-input-container label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+    color: #333;
+    font-size: 1rem;
+}
+
+.degree-input-container input[type="number"] {
+    width: 100%;
+    padding: 12px 15px;
+    border: 2px solid #e0e0e0;
+    border-radius: 10px;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.degree-input-container input[type="number"]:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    transform: scale(1.02);
+}
+
+/* Styling for the small info text below degree input */
+#degreeInfo {
+    color: #667eea;
+    margin-top: 8px;
+    display: block;
+    font-weight: 600;
+    font-size: 0.9rem; /* Slightly smaller font for info text */
+}
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <div class="header">
+            <h1><i class="fas fa-chart-line"></i> Animateur d'Interpolation de Lagrange</h1>
+            <p>Découvrez comment calculer l'interpolation polynomiale de Lagrange étape par étape</p>
+        </div>
+
+        <div class="content">
+            <div class="input-section">
+                <h2><i class="fas fa-plus-circle"></i> Saisie des Points</h2>
+                
+                <!-- Degree input field -->
+                <div class="degree-input-container">
+                    <label for="degreeInput">Degré du polynôme (n):</label>
+                    <input type="number" id="degreeInput" placeholder="Entrez le degré (ex: 3)" min="1" max="10" onchange="generatePointsFromDegree()" oninput="updateDegreeInfo()">
+                    <small id="degreeInfo" style="color: #667eea; margin-top: 8px; display: block; font-weight: 600;">
+                        Entrez un degré pour générer les champs de points
+                    </small>
+                </div>
+                
+                <div class="points-container" id="pointsContainer">
+                    <!-- Points will be generated here based on degree -->
+                </div>
+                
+                <div class="button-group">
+                    <button class="btn btn-success" type="button" onclick="generatePointsFromDegree()">
+                        <i class="fas fa-sync-alt"></i> Générer Points
+                    </button>
+                    <button class="btn btn-primary" type="button" onclick="calculateAndAnimate()">
+                        <i class="fas fa-calculator"></i> Calculer l'Interpolation
+                    </button>
+                    <button class="btn btn-primary" type="button" onclick="sendToOdoo()" style="display: none;" id="sendOdooBtn">
+                        <i class="fas fa-cloud-upload-alt"></i> Envoyer à Odoo
+                    </button>
+                </div>
+            </div>
+
+            <div class="error-message" id="errorMessage"></div>
+
+            <div class="result-section" id="resultSection">
+                <h3><i class="fas fa-function"></i> Polynôme d'Interpolation P(x)</h3>
+                <div id="finalResult"></div>
+            </div>
+
+            <div class="animation-container">
+                <div class="step-counter" id="stepCounter">Étape 0/0</div>
+                
+                <svg class="animation-svg" id="animationSvg">
+                    <defs>
+                        <marker id="arrowhead" markerWidth="10" markerHeight="7" 
+                                refX="10" refY="3.5" orient="auto">
+                            <polygon points="0 0, 10 3.5, 0 7" fill="#ff4444" />
+                        </marker>
+                    </defs>
+                </svg>
+                
+                <div class="animation-content">
+                    <div class="step-explanation" id="explanationText">
+                        <h4><i class="fas fa-info-circle"></i> Bienvenue dans le calculateur d'interpolation de Lagrange!</h4>
+                        <p>Saisissez le degré du polynôme et cliquez sur "Générer Points", puis "Calculer l'Interpolation" pour voir comment construire le polynôme pas à pas.</p>
+                        <p><strong>Objectif:</strong> Trouver un polynôme P(x) qui passe exactement par tous les points donnés.</p>
+                    </div>
+                    
+                    <div class="math-equation" id="equationDisplay">
+                        $$P(x) = \sum_{j=0}^{n} f(x_j) \cdot l_j(x)$$
+                    </div>
+
+                    <div class="points-visualization" id="pointsVisualization"></div>
+                    
+                    <div class="lagrange-fraction" id="lagrangeFraction" style="display: none;">
+                        <div class="fraction-numerator" id="fractionNumerator"></div>
+                        <div class="fraction-line"></div>
+                        <div class="fraction-denominator" id="fractionDenominator"></div>
+                    </div>
+
+                    <div class="calculation-steps" id="calculationSteps"></div>
+                    
+                    <div class="lagrange-terms" id="lagrangeTerms"></div>
+                </div>
+            </div>
+
+            <div class="control-buttons">
+                <button class="btn btn-control" type="button" onclick="nextStep()" id="nextBtn">
+                    <i class="fas fa-step-forward"></i> Étape Suivante
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let points = [];
+        let animationTimeline;
+        let currentStep = 0;
+        let isPlaying = false;
+        let lagrangeTerms = [];
+        let totalSteps = 6;
+        let degree = null;
+        let currentLjIndex = 0;
+
+        // Initialize MathJax
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            svg: {
+                fontCache: 'global'
+            }
+        };
+
+        // Point Management
+        function updateDegreeInfo() {
+            const degreeInput = document.getElementById('degreeInput');
+            const degreeInfo = document.getElementById('degreeInfo');
+            const inputValue = degreeInput.value.trim();
+            
+            if (inputValue === '') {
+                degreeInfo.textContent = 'Entrez un degré pour générer les champs de points';
+                degreeInfo.style.color = '#667eea';
+                return;
+            }
+            
+            const degree = parseInt(inputValue);
+            
+            if (!isNaN(degree) && degree >= 1) {
+                degreeInfo.textContent = `Pour n=${degree}, vous aurez ${degree + 1} points à saisir (n+1 points)`;
+                degreeInfo.style.color = '#667eea';
+            } else {
+                degreeInfo.textContent = 'Veuillez entrer un degré valide (≥ 1)';
+                degreeInfo.style.color = '#ff6b6b';
+            }
+        }
+
+        function generatePointsFromDegree() {
+            const degreeInput = document.getElementById('degreeInput');
+            const pointsContainer = document.getElementById('pointsContainer');
+            const inputValue = degreeInput.value.trim();
+            
+            if (inputValue === '') {
+                showError("Veuillez d'abord entrer un degré pour le polynôme.");
+                return;
+            }
+            
+            degree = parseInt(inputValue);
+
+            if (isNaN(degree) || degree < 1) {
+                showError("Le degré doit être un nombre entier positif (minimum 1).");
+                return;
+            }
+
+            // Update info text
+            updateDegreeInfo();
+
+            pointsContainer.innerHTML = '';
+            points = [];
+
+            // Generate n+1 input fields for points without default values
+            for (let i = 0; i <= degree; i++) {
+                const pointDiv = document.createElement('div');
+                pointDiv.className = 'point-input fade-in-up';
+                pointDiv.id = `input-point-${i}`;
+                
+                pointDiv.innerHTML = `
+                    <label>Point ${i}: (x${i}, f(x${i}))</label>
+                    <input type="number" placeholder="Valeur X" class="x-input" oninput="checkPointsComplete()">
+                    <input type="number" placeholder="Valeur Y" class="y-input" oninput="checkPointsComplete()">
+                `;
+                pointsContainer.appendChild(pointDiv);
+                
+                // Add animation delay
+                gsap.fromTo(pointDiv, 
+                    { opacity: 0, y: 20 }, 
+                    { opacity: 1, y: 0, duration: 0.5, delay: i * 0.1 }
+                );
+            }
+            
+            // Check if points are complete after generation
+            setTimeout(() => {
+                checkPointsComplete();
+            }, 500);
+        }
+
+        function checkPointsComplete() {
+            const xInputs = document.querySelectorAll('.x-input');
+            const yInputs = document.querySelectorAll('.y-input');
+            let allFilled = true;
+            
+            for (let i = 0; i < xInputs.length; i++) {
+                if (xInputs[i].value === '' || yInputs[i].value === '' || 
+                    isNaN(parseFloat(xInputs[i].value)) || isNaN(parseFloat(yInputs[i].value))) {
+                    allFilled = false;
+                    break;
+                }
+            }
+            
+            // Auto-enable calculation button when all points are filled
+            const calculateBtn = document.querySelector('button[onclick="calculateAndAnimate()"]');
+            if (allFilled && xInputs.length > 1) {
+                calculateBtn.style.background = 'linear-gradient(135deg, #4caf50 0%, #66bb6a 100%)';
+                calculateBtn.style.boxShadow = '0 10px 25px rgba(76, 175, 80, 0.4)';
+                calculateBtn.innerHTML = '<i class="fas fa-calculator"></i> Calculer l\'Interpolation (Prêt!)';
+            } else {
+                calculateBtn.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+                calculateBtn.style.boxShadow = '0 10px 25px rgba(102, 126, 234, 0.3)';
+                calculateBtn.innerHTML = '<i class="fas fa-calculator"></i> Calculer l\'Interpolation';
+            }
+        }
+
+        function collectPoints() {
+            const xInputs = document.querySelectorAll('.x-input');
+            const yInputs = document.querySelectorAll('.y-input');
+            points = [];
+            
+            if (xInputs.length === 0) {
+                throw new Error('Veuillez d\'abord générer les champs de points en entrant un degré.');
+            }
+            
+            const xCoordinates = [];
+            
+            for (let i = 0; i < xInputs.length; i++) {
+                const x = parseFloat(xInputs[i].value);
+                const y = parseFloat(yInputs[i].value);
+                
+                if (isNaN(x) || isNaN(y)) {
+                    throw new Error(`Point ${i + 1}: Veuillez entrer des valeurs numériques valides.`);
+                }
+                
+                // Check for duplicate x-coordinates
+                if (xCoordinates.includes(x)) {
+                    throw new Error(`Erreur: La coordonnée x=${x} est dupliquée. Chaque coordonnée x doit être unique pour l'interpolation.`);
+                }
+                xCoordinates.push(x);
+                
+                points.push({ x, y, id: `point-${i}`, inputId: `input-point-${i}` });
+            }
+            
+            if (points.length < 2) {
+                throw new Error('Au moins 2 points sont nécessaires pour l\'interpolation.');
+            }
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            
+            // Add helpful tips for common errors
+            let enhancedMessage = message;
+            if (message.includes('coordonnées x dupliquées') || message.includes('Duplicate x-coordinates')) {
+                enhancedMessage += '\n\n💡 Conseil: Assurez-vous que toutes les valeurs x sont différentes les unes des autres.';
+            } else if (message.includes('Matrice singulière') || message.includes('Singular matrix')) {
+                enhancedMessage += '\n\n💡 Conseil: Essayez d\'espacer davantage vos points ou vérifiez qu\'ils ne sont pas alignés.';
+            } else if (message.includes('trop proches') || message.includes('collinéaires')) {
+                enhancedMessage += '\n\n💡 Conseil: Utilisez des points avec des coordonnées x plus distinctes.';
+            }
+            
+            errorDiv.innerHTML = enhancedMessage.replace(/\n/g, '<br>');
+            errorDiv.style.background = 'linear-gradient(135deg, #f44336 0%, #e57373 100%)';
+            errorDiv.style.display = 'block';
+            gsap.fromTo(errorDiv, { opacity: 0, y: -20 }, { opacity: 1, y: 0, duration: 0.5 });
+            
+            // Auto-hide after 8 seconds for user-friendly experience
+            setTimeout(() => {
+                gsap.to(errorDiv, { 
+                    opacity: 0, y: -20, duration: 0.5, 
+                    onComplete: () => errorDiv.style.display = 'none' 
+                });
+            }, 8000);
+        }
+
+        // Lagrange Calculation
+        function calculateLagrangeTerms() {
+            lagrangeTerms = [];
+            const n = points.length;
+            
+            for (let i = 0; i < n; i++) {
+                let numeratorFactors = [];
+                let denominatorFactors = [];
+                let denominatorValue = 1;
+                
+                for (let j = 0; j < n; j++) {
+                    if (i !== j) {
+                        numeratorFactors.push(`(x - ${points[j].x})`);
+                        denominatorFactors.push(`(${points[i].x} - ${points[j].x})`);
+                        denominatorValue *= (points[i].x - points[j].x);
+                    }
+                }
+                
+                lagrangeTerms.push({
+                    index: i,
+                    numeratorFactors: numeratorFactors,
+                    denominatorFactors: denominatorFactors,
+                    denominatorValue: denominatorValue,
+                    coefficient: points[i].y,
+                    point: points[i]
+                });
+            }
+        }
+
+        // Animation Utility Functions
+        function clearAnimationElements() {
+            gsap.killTweensOf('.animated-number, .animated-term, .animated-arrow, .point-card');
+            document.querySelectorAll('.animated-number, .animated-term').forEach(el => el.remove());
+            document.querySelectorAll('.animated-arrow').forEach(el => el.remove());
+            document.querySelectorAll('.point-card').forEach(el => el.classList.remove('active'));
+            document.getElementById('pointsVisualization').innerHTML = '';
+            document.getElementById('lagrangeFraction').style.display = 'none';
+            document.getElementById('lagrangeTerms').style.display = 'none';
+            document.getElementById('lagrangeTerms').innerHTML = '';
+        }
+
+        function createArrow(startElement, endElement, duration = 0.8, delay = 0, color = '#ff4444') {
+            const svg = document.getElementById('animationSvg');
+            const svgRect = svg.getBoundingClientRect();
+
+            if (!startElement || !endElement) {
+                console.error("createArrow: startElement or endElement is null/undefined");
+                return;
+            }
+
+            const startRect = startElement.getBoundingClientRect();
+            const endRect = endElement.getBoundingClientRect();
+
+            const x1 = startRect.left + startRect.width / 2 - svgRect.left;
+            const y1 = startRect.top + startRect.height / 2 - svgRect.top;
+            const x2 = endRect.left + endRect.width / 2 - svgRect.left;
+            const y2 = endRect.top + endRect.height / 2 - svgRect.top;
+
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            
+            line.setAttribute('x1', x1);
+            line.setAttribute('y1', y1);
+            line.setAttribute('x2', x1); 
+            line.setAttribute('y2', y1);
+            line.setAttribute('stroke', color);
+            line.setAttribute('stroke-width', '3');
+            line.setAttribute('marker-end', 'url(#arrowhead)');
+            line.classList.add('animated-arrow');
+            
+            svg.appendChild(line);
+            
+            gsap.to(line, {
+                duration: duration,
+                attr: { x2: x2, y2: y2 },
+                opacity: 1,
+                delay: delay,
+                ease: "power2.out"
+            });
+            
+            gsap.to(line, {
+                duration: 0.5,
+                opacity: 0,
+                delay: delay + duration + 1, 
+                onComplete: () => line.remove()
+            });
+        }
+
+        function updateStepCounter(step) {
+            document.getElementById('stepCounter').textContent = `Étape ${step}/${totalSteps}`;
+            
+            // Update button visibility based on current step
+            const nextBtn = document.getElementById('nextBtn');
+            
+            if (step >= totalSteps) {
+                // At final step - hide next button
+                nextBtn.style.display = 'none';
+            } else {
+                // Show next button for all other steps
+                nextBtn.style.display = 'inline-flex';
+            }
+        }
+
+        // Animation Steps
+        function step1ExplainRules() {
+            currentStep = 1;
+            updateStepCounter(currentStep);
+            
+            document.getElementById('explanationText').innerHTML = `
+                <h4><i class="fas fa-info-circle"></i> Étape 1: Règles de P(x) et L<sub>j</sub>(x)</h4>
+                <p>Pour un polynôme de degré <strong>n</strong>, nous avons besoin de <strong>n+1</strong> points.</p>
+                <p>Avec ${degree + 1} points → P<sub>${degree}</sub>(x)</p>
+                <p>Exemples: 3 points → P<sub>2</sub>(x), 4 points → P<sub>3</sub>(x)</p>
+            `;
+            
+            document.getElementById('equationDisplay').innerHTML = `
+                $$P(x) = \\sum_{j=0}^{n} f(x_j) \\cdot L_j(x)$$
+                $$L_j(x) = \\prod_{i=0, i \\neq j}^{n} \\frac{x - x_i}{x_j - x_i}$$
+            `;
+            
+            safeMathJaxRender([document.getElementById('equationDisplay')]);
+        }
+
+        function step2DisplayPoints() {
+            currentStep = 2;
+            updateStepCounter(currentStep);
+            
+            document.getElementById('explanationText').innerHTML = `
+                <h4><i class="fas fa-list-ol"></i> Étape 2: Affichage des points</h4>
+                <p>Voici vos points sous la forme (x<sub>j</sub>; f(x<sub>j</sub>)):</p>
+            `;
+            
+            let pointsHtml = '';
+            points.forEach((point, index) => {
+                pointsHtml += `
+                    <div class="point-card fade-in-up" id="${point.id}">
+                        <h5>Point ${index}:</h5>
+                        <div>(x<sub>${index}</sub>; f(x<sub>${index}</sub>)) = (${point.x}; <span class="fx-value" id="fx-${index}">${point.y}</span>)</div>
+                    </div>
+                `;
+            });
+            
+            document.getElementById('pointsVisualization').innerHTML = pointsHtml;
+            gsap.fromTo(document.getElementById('pointsVisualization').children, 
+                { opacity: 0, y: 20 }, 
+                { opacity: 1, y: 0, stagger: 0.2, duration: 0.8 }
+            );
+            
+            // Clear the yellow equation box
+            document.getElementById('equationDisplay').innerHTML = '';
+            document.getElementById('equationDisplay').style.display = 'none';
+        }
+
+        function step3ShowPxEquation() {
+            currentStep = 3;
+            updateStepCounter(currentStep);
+            
+            document.getElementById('explanationText').innerHTML = `
+                <h4><i class="fas fa-calculator"></i> Étape 3: Équation P(x) et transfert f(x<sub>j</sub>)</h4>
+                <p>Construction de l'équation complète P(x) et placement des valeurs f(x<sub>j</sub>):</p>
+            `;
+            
+            // Show the yellow equation box
+            document.getElementById('equationDisplay').style.display = 'flex';
+            
+            // Build equation string
+            let equationParts = [];
+            points.forEach((point, index) => {
+                equationParts.push(`f(x_{${index}}) \\cdot L_{${index}}(x)`);
+            });
+            
+            document.getElementById('equationDisplay').innerHTML = `
+                $$P(x) = ${equationParts.join(' + ')}$$
+            `;
+            
+            // Add small arrows under the f(xj) values specifically
+            points.forEach((point, index) => {
+                const fxValueElement = document.getElementById(`fx-${index}`);
+                if (fxValueElement && !fxValueElement.querySelector('.point-arrow')) {
+                    const arrow = document.createElement('div');
+                    arrow.className = 'point-arrow';
+                    arrow.innerHTML = '<i class="fas fa-arrow-up"></i>';
+                    arrow.style.position = 'relative';
+                    arrow.style.display = 'inline-block';
+                    arrow.style.width = '100%';
+                    
+                    // Create a wrapper to position arrow under the value
+                    const wrapper = document.createElement('div');
+                    wrapper.style.position = 'relative';
+                    wrapper.style.display = 'inline-block';
+                    
+                    fxValueElement.parentNode.insertBefore(wrapper, fxValueElement);
+                    wrapper.appendChild(fxValueElement);
+                    wrapper.appendChild(arrow);
+                }
+            });
+            
+            safeMathJaxRender([document.getElementById('equationDisplay')]).then(() => {
+                // Animate all f(xj) values transfer with staggered timing
+                let animationDelay = 500;
+                const delayBetweenAnimations = 1200;
+                
+                points.forEach((point, index) => {
+                    setTimeout(() => {
+                        const fXjValue = point.y;
+                        const pointCard = document.getElementById(point.id);
+                        const targetElement = document.getElementById('equationDisplay');
+
+                        if (pointCard && targetElement) {
+                            // Highlight current point
+                            pointCard.classList.add('active');
+                            
+                            const animatedFxj = document.createElement('span');
+                            animatedFxj.className = 'animated-number';
+                            animatedFxj.textContent = fXjValue;
+                            animatedFxj.style.background = `linear-gradient(135deg, hsl(${index * 60}, 70%, 55%) 0%, hsl(${index * 60 + 30}, 70%, 65%) 100%)`;
+                            document.body.appendChild(animatedFxj);
+
+                            const pointRect = pointCard.getBoundingClientRect();
+                            const targetRect = targetElement.getBoundingClientRect();
+
+                            gsap.set(animatedFxj, {
+                                x: pointRect.left + pointRect.width / 2,
+                                y: pointRect.top + pointRect.height / 2,
+                                opacity: 0
+                            });
+
+                            gsap.to(animatedFxj, { opacity: 1, duration: 0.5 });
+                            
+                            // Create arrow with different color for each point
+                            const arrowColor = `hsl(${index * 60}, 70%, 50%)`;
+                            createArrow(pointCard, targetElement, 1.0, 0.2, arrowColor);
+
+                            gsap.to(animatedFxj, {
+                                x: targetRect.left + 100 + (index * 150),
+                                y: targetRect.top + targetRect.height / 2,
+                                scale: 1.2,
+                                duration: 1.0,
+                                ease: "power2.inOut",
+                                onComplete: () => {
+                                    animatedFxj.remove();
+                                    pointCard.classList.remove('active');
+                                    
+                                    // Update equation progressively
+                                    let updatedParts = [];
+                                    for (let i = 0; i <= index; i++) {
+                                        updatedParts.push(`${points[i].y} \\cdot L_{${i}}(x)`);
+                                    }
+                                    for (let i = index + 1; i < points.length; i++) {
+                                        updatedParts.push(`f(x_{${i}}) \\cdot L_{${i}}(x)`);
+                                    }
+                                    
+                                    document.getElementById('equationDisplay').innerHTML = `
+                                        $$P(x) = ${updatedParts.join(' + ')}$$
+                                    `;
+                                    safeMathJaxRender([document.getElementById('equationDisplay')]);
+                                }
+                            });
+                        }
+                    }, animationDelay + (index * delayBetweenAnimations));
+                });
+            });
+        }
+
+        function step4ExplainLjStructure() {
+            currentStep = 4;
+            updateStepCounter(currentStep);
+            
+            document.getElementById('explanationText').innerHTML = `
+                <h4><i class="fas fa-code-branch"></i> Étape 4: Structure de L<sub>j</sub>(x) selon le degré</h4>
+                <p>Pour un degré ${degree}, chaque L<sub>j</sub>(x) aura ${degree} termes:</p>
+                <p>L<sub>j</sub>(x) = degré ${degree}</p>
+            `;
+            
+            // Show the yellow equation box with P(x) result from step 3
+            document.getElementById('equationDisplay').style.display = 'flex';
+            
+            // Build the final P(x) equation from step 3
+            let finalEquationParts = [];
+            points.forEach((point, index) => {
+                finalEquationParts.push(`${point.y} \\cdot L_{${index}}(x)`);
+            });
+            
+            document.getElementById('equationDisplay').innerHTML = `
+                $$P(x) = ${finalEquationParts.join(' + ')}$$
+            `;
+            
+            // Hide points visualization for this step
+            document.getElementById('pointsVisualization').style.display = 'none';
+            
+            // Show fraction structure
+            document.getElementById('lagrangeFraction').style.display = 'flex';
+            
+            // Add L_j(x) label and formula structure
+            const fractionContainer = document.getElementById('lagrangeFraction');
+            fractionContainer.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 30px; width: 100%; justify-content: center;">
+                    <div style="display: flex; align-items: center; gap: 20px;">
+                        <div style="font-size: 1.8rem; font-weight: bold; color: #667eea;">
+                            L<sub>j</sub>(x) =
+                        </div>
+                        <div style="display: flex; flex-direction: column; align-items: center;">
+                            <div class="fraction-numerator" id="fractionNumerator"></div>
+                            <div class="fraction-line"></div>
+                            <div class="fraction-denominator" id="fractionDenominator"></div>
+                        </div>
+                    </div>
+                    <div style="font-size: 1.5rem; color: #667eea; font-weight: bold;">
+                        =
+                    </div>
+                    <div style="display: flex; flex-direction: column; align-items: center;">
+                        <div style="font-size: 1.4rem; color: #333; padding: 8px 15px; margin: 5px;">
+                            X - X<sub>i</sub>
+                        </div>
+                        <div style="width: 200px; height: 3px; background: #667eea; margin: 8px 0; border-radius: 2px;"></div>
+                        <div style="font-size: 1.4rem; color: #333; padding: 8px 15px; margin: 5px;">
+                            X<sub>j</sub> - X<sub>i</sub>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Build numerator and denominator with empty terms based on degree
+            const numeratorContainer = document.getElementById('fractionNumerator');
+            const denominatorContainer = document.getElementById('fractionDenominator');
+            
+            numeratorContainer.innerHTML = '';
+            denominatorContainer.innerHTML = '';
+            
+            // Create empty terms for structure
+            for (let i = 0; i < degree; i++) {
+                const numTerm = document.createElement('div');
+                numTerm.className = 'fraction-term';
+                numTerm.textContent = '( )';
+                numeratorContainer.appendChild(numTerm);
+                
+                const denTerm = document.createElement('div');
+                denTerm.className = 'fraction-term';
+                denTerm.textContent = '( )';
+                denominatorContainer.appendChild(denTerm);
+                
+                if (i < degree - 1) {
+                    const numX = document.createElement('span');
+                    numX.textContent = '×';
+                    numX.style.fontSize = '1.5rem';
+                    numX.style.color = '#667eea';
+                    numeratorContainer.appendChild(numX);
+                    
+                    const denX = document.createElement('span');
+                    denX.textContent = '×';
+                    denX.style.fontSize = '1.5rem';
+                    denX.style.color = '#667eea';
+                    denominatorContainer.appendChild(denX);
+                }
+            }
+            
+            // Animate the fraction structure appearance
+            gsap.fromTo([numeratorContainer, denominatorContainer], 
+                { opacity: 0, y: 20 }, 
+                { opacity: 1, y: 0, duration: 0.8, stagger: 0.3 }
+            );
+            
+            // Render MathJax for the equation
+            safeMathJaxRender([document.getElementById('equationDisplay')]);
+        }
+
+        function step5CalculateLj() {
+            currentStep = 5;
+            updateStepCounter(currentStep);
+            
+            document.getElementById('explanationText').innerHTML = `
+                <h4><i class="fas fa-arrow-right"></i> Étape 5: Calcul de tous les termes L<sub>j</sub>(x)</h4>
+                <p>Il y a <strong>${lagrangeTerms.length}</strong> termes L<sub>j</sub>(x) au total (un pour chaque point).</p>
+                <p>Voici le calcul de tous les termes L<sub>j</sub>(x):</p>
+            `;
+            
+            // Show points visualization for step 5 without arrows
+            document.getElementById('pointsVisualization').style.display = 'grid';
+            
+            // Re-populate points without arrows
+            let pointsHtml = '';
+            points.forEach((point, index) => {
+                pointsHtml += `
+                    <div class="point-card fade-in-up" id="${point.id}">
+                        <h5>Point ${index}:</h5>
+                        <div>(x<sub>${index}</sub>; f(x<sub>${index}</sub>)) = (${point.x}; ${point.y})</div>
+                    </div>
+                `;
+            });
+            document.getElementById('pointsVisualization').innerHTML = pointsHtml;
+            
+            // Display all Lj(x) terms in boxes under the points
+            const lagrangeTermsContainer = document.getElementById('lagrangeTerms');
+            lagrangeTermsContainer.innerHTML = '';
+            lagrangeTermsContainer.style.display = 'flex';
+            
+            // Create boxes for ALL Lj(x) terms with simplified mathematical operations
+            lagrangeTerms.forEach((term, index) => {
+                const termBox = document.createElement('div');
+                termBox.className = 'term-box';
+                termBox.id = `term-box-${index}`;
+                
+                // Calculate the mathematical expression and result
+                const denominatorExpression = term.denominatorFactors.join(' × ');
+                const denominatorValue = term.denominatorValue;
+                
+                // Expand numerator for display
+                let expandedNumerator = '';
+                
+                // Create expanded form like (x-2)(x-3)(x-4)
+                if (term.numeratorFactors.length > 0) {
+                    expandedNumerator = term.numeratorFactors.join('');
+                }
+                
+                // Get the numerical result from Python calculation
+                const evaluationPoint = window.apiEvaluationPoint !== undefined ? window.apiEvaluationPoint : 
+                    (term.evaluationPoint !== undefined ? term.evaluationPoint : 0);
+                const numericalResult = term.lagrangeValueAtX0 !== undefined ? 
+                    term.lagrangeValueAtX0.toFixed(6) : 'Calculé par Python';
+                
+                // Show simplified calculations with the "=" and numerical result
+                termBox.innerHTML = `
+                    <h5 style="color: #9c27b0; margin-bottom: 10px; font-weight: bold;">
+                        L<sub>${index}</sub>(x) ✓
+                    </h5>
+                    <div style="font-size: 0.85rem; color: #333; line-height: 1.6; text-align: left;">
+                        <div style="margin-bottom: 8px;">
+                            <strong>Point ${index}:</strong> (${term.point.x}, ${term.point.y})<br>
+                        </div>
+                        <div style="margin-bottom: 8px;">
+                            <strong>Expression symbolique:</strong><br>
+                            <div style="text-align: center; font-size: 0.8rem; color: #666; margin: 5px 0;">
+                                ${term.symbolic || 'L' + index + '(x) = ' + expandedNumerator + ' / ' + denominatorValue}
+                            </div>
+                        </div>
+                        <div style="margin-bottom: 8px;">
+                            <strong>Fraction simplifiée:</strong><br>
+                            <div style="text-align: center; margin: 5px 0;">
+                                <div style="border-bottom: 1px solid #666; padding-bottom: 2px;">
+                                    ${expandedNumerator}
+                                </div>
+                                <div style="padding-top: 2px;">
+                                    ${denominatorValue}
+                                </div>
+                            </div>
+                        </div>
+                        <div style="background: linear-gradient(135deg, rgba(76, 175, 80, 0.1) 0%, rgba(139, 195, 74, 0.1) 100%); 
+                                    border-radius: 8px; padding: 8px; border: 1px solid #4caf50;">
+                            <strong style="color: #4caf50;">Évaluation à x = ${evaluationPoint}:</strong><br>
+                            <div style="text-align: center; font-weight: bold; color: #4caf50; font-size: 1rem;">
+                                = ${numericalResult}
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // Style all boxes as completed
+                termBox.style.background = 'linear-gradient(135deg, rgba(76, 175, 80, 0.15) 0%, rgba(139, 195, 74, 0.15) 100%)';
+                termBox.style.borderColor = '#4caf50';
+                
+                lagrangeTermsContainer.appendChild(termBox);
+                
+                // Animate box appearance with staggered timing
+                gsap.fromTo(termBox, 
+                    { opacity: 0, scale: 0.8 }, 
+                    { opacity: 1, scale: 1, duration: 0.6, delay: index * 0.2 }
+                );
+            });
+            
+            // Show the general fraction formula instead of specific calculation
+            const fractionContainer = document.getElementById('lagrangeFraction');
+            fractionContainer.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 30px; width: 100%; justify-content: center; flex-wrap: wrap;">
+                    <div style="font-size: 1.8rem; font-weight: bold; color: #667eea; margin-bottom: 10px;">
+                        Formule générale: L<sub>j</sub>(x) =
+                    </div>
+                    <div style="display: flex; flex-direction: column; align-items: center;">
+                        <div style="font-size: 1.2rem; color: #333; padding: 8px 15px; margin: 5px; border: 2px solid #667eea; border-radius: 10px;">
+                            ∏(x - x<sub>i</sub>) où i ≠ j
+                        </div>
+                        <div style="width: 200px; height: 3px; background: #667eea; margin: 8px 0; border-radius: 2px;"></div>
+                        <div style="font-size: 1.2rem; color: #333; padding: 8px 15px; margin: 5px; border: 2px solid #667eea; border-radius: 10px;">
+                            ∏(x<sub>j</sub> - x<sub>i</sub>) où i ≠ j
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Remove active highlighting from points
+            document.querySelectorAll('.point-card').forEach(card => card.classList.remove('active'));
+        }
+
+        // Helper function to format polynomial coefficients into expanded form
+        function formatPolynomialFromCoefficients(coefficients) {
+            if (!coefficients || coefficients.length === 0) {
+                return "0";
+            }
+            
+            const terms = [];
+            const degree = coefficients.length - 1;
+            
+            for (let i = 0; i < coefficients.length; i++) {
+                const coeff = coefficients[i];
+                const power = degree - i;
+                
+                // Skip very small coefficients (near zero)
+                if (Math.abs(coeff) < 1e-10) {
+                    continue;
+                }
+                
+                let term = "";
+                
+                // Handle coefficient sign and value
+                if (terms.length === 0) { // First term
+                    if (coeff < 0) {
+                        term = "-";
+                    }
+                } else { // Subsequent terms
+                    if (coeff < 0) {
+                        term = " - ";
+                    } else {
+                        term = " + ";
+                    }
+                }
+                
+                // Handle coefficient value
+                const absCoeff = Math.abs(coeff);
+                if (power === 0) {
+                    // Constant term - always show the coefficient
+                    if (isSimpleFraction(absCoeff)) {
+                        term += formatAsFraction(absCoeff);
+                    } else {
+                        term += formatDecimal(absCoeff);
+                    }
+                } else if (absCoeff === 1) {
+                    // Coefficient is 1, don't show it explicitly
+                    // term already has the sign
+                } else {
+                    // Show the coefficient
+                    if (isSimpleFraction(absCoeff)) {
+                        term += formatAsFraction(absCoeff);
+                    } else {
+                        term += formatDecimal(absCoeff);
+                    }
+                }
+                
+                // Handle variable and power
+                if (power > 1) {
+                    term += `x^{${power}}`;
+                } else if (power === 1) {
+                    term += "x";
+                }
+                // For power 0, no x term needed (already handled above)
+                
+                terms.push(term);
+            }
+            
+            return terms.length > 0 ? terms.join('') : "0";
+        }
+        
+        // Helper function to check if a number can be represented as a simple fraction
+        function isSimpleFraction(num) {
+            const tolerance = 1e-10;
+            for (let denom = 2; denom <= 12; denom++) {
+                for (let numer = 1; numer < denom * 4; numer++) {
+                    if (Math.abs(num - numer / denom) < tolerance) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+        
+        // Helper function to format number as fraction
+        function formatAsFraction(num) {
+            const tolerance = 1e-10;
+            for (let denom = 2; denom <= 12; denom++) {
+                for (let numer = 1; numer < denom * 4; numer++) {
+                    if (Math.abs(num - numer / denom) < tolerance) {
+                        return `\\frac{${numer}}{${denom}}`;
+                    }
+                }
+            }
+            return formatDecimal(num);
+        }
+        
+        // Helper function to format decimal with reasonable precision (2 decimal places)
+        function formatDecimal(num) {
+            if (Math.abs(num - Math.round(num)) < 1e-10) {
+                return Math.round(num).toString();
+            }
+            return num.toFixed(2).replace(/\.?0+$/, '');
+        }
+
+        function step6FinalResult() {
+            currentStep = 6;
+            updateStepCounter(currentStep);
+            
+            document.getElementById('explanationText').innerHTML = `
+                <h4><i class="fas fa-trophy"></i> Étape 6: Résultat final P(x)</h4>
+                <p>Après calcul et simplification de tous les termes:</p>
+                <p>Le polynôme d'interpolation de Lagrange final est:</p>
+            `;
+            
+            // Use polynomial coefficients from Python backend if available
+            let expandedPolynomial = "";
+            
+            if (window.polynomialCoefficients && window.polynomialCoefficients.length > 0) {
+                // Use the coefficients calculated by the Python backend
+                expandedPolynomial = formatPolynomialFromCoefficients(window.polynomialCoefficients);
+            } else {
+                // Fallback to Lagrange fraction form (original implementation)
+                let polynomialTerms = [];
+                
+                // Build each term: coefficient × Li(x)
+                lagrangeTerms.forEach((term, index) => {
+                    const coefficient = term.coefficient;
+                    const numerator = term.numeratorFactors.join('');
+                    const denominator = term.denominatorValue;
+                    
+                    // Create the fraction form for each term
+                    polynomialTerms.push(`\\frac{${coefficient} \\cdot ${numerator}}{${denominator}}`);
+                });
+                
+                // Join all terms with + signs
+                expandedPolynomial = polynomialTerms.join(' + ');
+            }
+            
+            // Display the final equation in the yellow box
+            document.getElementById('equationDisplay').innerHTML = `
+                $$P(x) = ${expandedPolynomial}$$
+            `;
+            
+            // Display the same in the result section
+            document.getElementById('finalResult').innerHTML = `
+                $$P(x) = ${expandedPolynomial}$$
+            `;
+            
+            // Hide the Lagrange terms and fraction display
+            document.getElementById('lagrangeFraction').style.display = 'none';
+            document.getElementById('lagrangeTerms').style.display = 'none';
+            
+            // Show the result section
+            document.getElementById('resultSection').style.display = 'block';
+            document.getElementById('sendOdooBtn').style.display = 'inline-flex';
+            
+            // Add additional mathematical breakdown
+            const breakdownContainer = document.createElement('div');
+            breakdownContainer.style.cssText = `
+                background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 249, 250, 0.9) 100%);
+                border: 2px solid #4caf50;
+                border-radius: 15px;
+                padding: 25px;
+                margin: 20px 0;
+                text-align: center;
+            `;
+            
+            let breakdownContent = "";
+            if (window.polynomialCoefficients && window.polynomialCoefficients.length > 0) {
+                breakdownContent = `
+                    <h5 style="color: #4caf50; margin-bottom: 15px; font-weight: bold;">
+                        Forme développée du polynôme:
+                    </h5>
+                    <div style="font-size: 1.1rem; line-height: 1.8;">
+                        $$P(x) = ${expandedPolynomial}$$
+                    </div>
+                    <div style="margin-top: 15px; font-size: 0.9rem; color: #666;">
+                        <strong>Coefficients calculés:</strong><br>
+                        ${window.polynomialCoefficients.map((coeff, i) => {
+                            const power = window.polynomialCoefficients.length - 1 - i;
+                            return `x^${power}: ${coeff.toFixed(4)}`;
+                        }).join(' • ')}
+                    </div>
+                    <div style="margin-top: 10px; font-size: 0.9rem; color: #666;">
+                        <strong>Points d'interpolation:</strong><br>
+                        ${points.map((point, index) => `(${point.x}, ${point.y})`).join(' • ')}
+                    </div>
+                `;
+            } else {
+                // Fallback display
+                const detailedBreakdown = lagrangeTerms.map((term, index) => {
+                    const coefficient = term.coefficient;
+                    const numerator = term.numeratorFactors.join('');
+                    const denominator = term.denominatorValue;
+                    return `\\frac{${coefficient} \\cdot ${numerator}}{${denominator}}`;
+                }).join(' + ');
+                
+                breakdownContent = `
+                    <h5 style="color: #4caf50; margin-bottom: 15px; font-weight: bold;">
+                        Forme développée complète:
+                    </h5>
+                    <div style="font-size: 1.1rem; line-height: 1.8;">
+                        $$P(x) = ${detailedBreakdown}$$
+                    </div>
+                    <div style="margin-top: 15px; font-size: 0.9rem; color: #666;">
+                        <strong>Coefficients des points:</strong><br>
+                        ${points.map((point, index) => `Point ${index}: (${point.x}, ${point.y})`).join(' • ')}
+                    </div>
+                `;
+            }
+            
+            breakdownContainer.innerHTML = breakdownContent;
+            
+            // Insert the breakdown after the equation display
+            const equationDisplay = document.getElementById('equationDisplay');
+            equationDisplay.parentNode.insertBefore(breakdownContainer, equationDisplay.nextSibling);
+            
+            gsap.fromTo(document.getElementById('resultSection'), 
+                { opacity: 0, y: 20 }, 
+                { opacity: 1, y: 0, duration: 0.8 }
+            );
+            
+            gsap.fromTo(breakdownContainer, 
+                { opacity: 0, y: 20 }, 
+                { opacity: 1, y: 0, duration: 0.8, delay: 0.3 }
+            );
+            
+            safeMathJaxRender([
+                document.getElementById('equationDisplay'),
+                document.getElementById('finalResult'),
+                breakdownContainer
+            ]);
+            
+            isPlaying = false;
+            document.getElementById('playPauseBtn').innerHTML = '<i class="fas fa-play"></i> Rejouer';
+        }
+
+        // Odoo Integration
+        async function sendToOdoo() {
+            try {
+                // Check if we have interpolation results
+                if (!window.polynomialCoefficients || !points || points.length === 0) {
+                    showError('Veuillez d\'abord calculer l\'interpolation avant d\'envoyer à Odoo');
+                    return;
+                }
+
+                // Prepare data in the format expected by the backend
+                const interpolationData = {
+                    original_points: points.map(p => [p.x, p.y]),
+                    coefficients: window.polynomialCoefficients || [],
+                    evaluation_points: window.evaluationPoints || [],
+                    evaluation_results: window.evaluationResults || [],
+                    polynomial_degree: degree
+                };
+
+                const data = {
+                    interpolation_data: interpolationData
+                };
+                
+                const response = await fetch('/api/odoo/send/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.success) {
+                        showSuccess('Données envoyées à Odoo avec succès!');
+                    } else {
+                        showError('Erreur: ' + (result.error || 'Échec de l\'envoi à Odoo'));
+                    }
+                } else {
+                    const errorData = await response.json();
+                    showError('Erreur lors de l\'envoi à Odoo: ' + (errorData.error || response.statusText));
+                }
+            } catch (error) {
+                showError('Erreur de connexion à Odoo: ' + error.message);
+            }
+        }
+
+        function showSuccess(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.style.background = 'linear-gradient(135deg, #4caf50 0%, #66bb6a 100%)';
+            errorDiv.style.display = 'block';
+            gsap.fromTo(errorDiv, { opacity: 0, y: -20 }, { opacity: 1, y: 0, duration: 0.5 });
+            setTimeout(() => {
+                gsap.to(errorDiv, { 
+                    opacity: 0, 
+                    y: -20, 
+                    duration: 0.5, 
+                    onComplete: () => {
+                        errorDiv.style.display = 'none';
+                        errorDiv.style.background = 'linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%)';
+                    }
+                });
+            }, 3000);
+        }
+
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        // Main calculation and animation function
+        async function calculateAndAnimate() {
+            try {
+                // Clear previous results
+                clearAnimationElements();
+                document.getElementById('resultSection').style.display = 'none';
+                document.getElementById('sendOdooBtn').style.display = 'none';
+                document.getElementById('errorMessage').style.display = 'none';
+                
+                // Collect and validate points
+                collectPoints();
+                
+                if (points.length < 2) {
+                    throw new Error('Au moins 2 points sont nécessaires pour l\'interpolation.');
+                }
+                
+                // Calculate Lagrange terms
+                calculateLagrangeTerms();
+                
+                // Send data to backend for polynomial calculation
+                const response = await fetch('/api/interpolate/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify({
+                        points: points.map(p => [p.x, p.y]),
+                        degree: degree
+                    })
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    
+                    // Store polynomial coefficients and evaluation data globally
+                    window.polynomialCoefficients = result.coefficients;
+                    window.evaluationPoints = result.evaluation_points || [];
+                    window.evaluationResults = result.evaluation_results || [];
+                    window.apiEvaluationPoint = result.evaluation_points ? result.evaluation_points[0] : 0;
+                    
+                    // Update lagrange terms with calculated values
+                    if (result.lagrange_terms_details && result.lagrange_terms_details.terms && Array.isArray(result.lagrange_terms_details.terms)) {
+                        window.apiEvaluationPoint = result.lagrange_terms_details.evaluation_point;
+                        result.lagrange_terms_details.terms.forEach((term, index) => {
+                            if (lagrangeTerms[index]) {
+                                lagrangeTerms[index].lagrangeValueAtX0 = term.final_value;
+                                lagrangeTerms[index].symbolic = term.symbolic;
+                                lagrangeTerms[index].evaluationPoint = window.apiEvaluationPoint;
+                            }
+                        });
+                        console.log('Successfully integrated Python calculation results:', result.lagrange_terms_details);
+                    } else {
+                        console.warn('lagrange_terms_details structure unexpected:', result.lagrange_terms_details);
+                    }
+                } else {
+                    const errorData = await response.json();
+                    const errorMessage = errorData.error || 'Erreur du serveur inconnue';
+                    
+                    // Translate common error messages to French
+                    let translatedError = errorMessage;
+                    if (errorMessage.includes('Duplicate x-coordinates')) {
+                        translatedError = 'Erreur: Coordonnées x dupliquées détectées. Chaque coordonnée x doit être unique.';
+                    } else if (errorMessage.includes('Singular matrix')) {
+                        translatedError = 'Erreur: Matrice singulière. Les points peuvent être trop proches ou colinéaires.';
+                    } else if (errorMessage.includes('rank deficient')) {
+                        translatedError = 'Erreur: Impossible de calculer des coefficients uniques pour ces points.';
+                    }
+                    
+                    throw new Error(translatedError);
+                }
+                
+                // Start animation sequence
+                totalSteps = 6;
+                startAnimation();
+                
+            } catch (error) {
+                showError(error.message);
+                console.error('Calculation error:', error);
+            }
+        }
+
+        // Animation Controls
+        function toggleAnimation() {
+            if (isPlaying) {
+                isPlaying = false;
+                document.getElementById('playPauseBtn').innerHTML = '<i class="fas fa-play"></i> Lecture';
+            } else {
+                isPlaying = true;
+                document.getElementById('playPauseBtn').innerHTML = '<i class="fas fa-pause"></i> Pause';
+                nextStep();
+            }
+        }
+
+        function nextStep() {
+            switch(currentStep) {
+                case 0:
+                    step1ExplainRules();
+                    break;
+                case 1:
+                    step2DisplayPoints();
+                    break;
+                case 2:
+                    step3ShowPxEquation();
+                    break;
+                case 3:
+                    step4ExplainLjStructure();
+                    break;
+                case 4:
+                    step5CalculateLj();
+                    break;
+                default:
+                    step6FinalResult();
+            }
+        }
+
+        function startAnimation() {
+            clearAnimationElements();
+            currentStep = 0;
+            currentLjIndex = 0;
+            updateStepCounter(0);
+            document.getElementById('resultSection').style.display = 'none';
+            document.getElementById('sendOdooBtn').style.display = 'none';
+            document.getElementById('errorMessage').style.display = 'none';
+            
+            isPlaying = true;
+            
+            // Start animation
+            nextStep();
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            updateStepCounter(0);
+            safeMathJaxRender([document.getElementById('equationDisplay')]);
+        });
+    </script>
+</body>
+</html>

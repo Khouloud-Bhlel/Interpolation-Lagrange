@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Interpolation Point Views -->
+    <record id="view_interpolation_point_tree" model="ir.ui.view">
+        <field name="name">lagrange.interpolation.point.tree</field>
+        <field name="model">lagrange.interpolation.point</field>
+        <field name="arch" type="xml">
+            <tree string="Interpolation Points">
+                <field name="name"/>
+                <field name="x_coordinate"/>
+                <field name="y_coordinate"/>
+                <field name="interpolation_set_id"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_interpolation_point_form" model="ir.ui.view">
+        <field name="name">lagrange.interpolation.point.form</field>
+        <field name="model">lagrange.interpolation.point</field>
+        <field name="arch" type="xml">
+            <form string="Interpolation Point">
+                <sheet>
+                    <group>
+                        <field name="x_coordinate"/>
+                        <field name="y_coordinate"/>
+                        <field name="interpolation_set_id"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Interpolation Set Views -->
+    <record id="view_interpolation_set_tree" model="ir.ui.view">
+        <field name="name">lagrange.interpolation.set.tree</field>
+        <field name="model">lagrange.interpolation.set</field>
+        <field name="arch" type="xml">
+            <tree string="Interpolation Sets">
+                <field name="name"/>
+                <field name="points_count"/>
+                <field name="polynomial_degree"/>
+                <field name="results_count"/>
+                <field name="create_date"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_interpolation_set_form" model="ir.ui.view">
+        <field name="name">lagrange.interpolation.set.form</field>
+        <field name="model">lagrange.interpolation.set</field>
+        <field name="arch" type="xml">
+            <form string="Interpolation Set">
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1><field name="name" placeholder="Set Name"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="description"/>
+                            <field name="points_count"/>
+                        </group>
+                        <group>
+                            <field name="polynomial_degree"/>
+                            <field name="results_count"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Points">
+                            <field name="point_ids">
+                                <tree editable="bottom">
+                                    <field name="x_coordinate"/>
+                                    <field name="y_coordinate"/>
+                                </tree>
+                            </field>
+                        </page>
+                        <page string="Results">
+                            <field name="result_ids">
+                                <tree>
+                                    <field name="name"/>
+                                    <field name="create_date"/>
+                                </tree>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Interpolation Result Views -->
+    <record id="view_interpolation_result_tree" model="ir.ui.view">
+        <field name="name">lagrange.interpolation.result.tree</field>
+        <field name="model">lagrange.interpolation.result</field>
+        <field name="arch" type="xml">
+            <tree string="Interpolation Results">
+                <field name="name"/>
+                <field name="interpolation_set_id"/>
+                <field name="polynomial_formula"/>
+                <field name="create_date"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_interpolation_result_form" model="ir.ui.view">
+        <field name="name">lagrange.interpolation.result.form</field>
+        <field name="model">lagrange.interpolation.result</field>
+        <field name="arch" type="xml">
+            <form string="Interpolation Result">
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <field name="interpolation_set_id"/>
+                        <field name="create_date"/>
+                    </group>
+                    
+                    <!-- Prominent Polynomial Formula Display -->
+                    <group string="Polynomial Formula">
+                        <field name="polynomial_formula" widget="text" style="font-size: 16px; font-weight: bold; color: #2E86AB;"/>
+                    </group>
+                    
+                    <notebook>
+                        <page string="Technical Data">
+                            <group>
+                                <field name="polynomial_coefficients" widget="text"/>
+                                <field name="evaluation_points" widget="text"/>
+                                <field name="evaluation_results" widget="text"/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Actions -->
+    <record id="action_interpolation_point" model="ir.actions.act_window">
+        <field name="name">Interpolation Points</field>
+        <field name="res_model">lagrange.interpolation.point</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <record id="action_interpolation_set" model="ir.actions.act_window">
+        <field name="name">Interpolation Sets</field>
+        <field name="res_model">lagrange.interpolation.set</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <record id="action_interpolation_result" model="ir.actions.act_window">
+        <field name="name">Interpolation Results</field>
+        <field name="res_model">lagrange.interpolation.result</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+</odoo>

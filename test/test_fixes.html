@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test MathJax and CSRF Fixes</title>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+    <h1>Testing MathJax and CSRF Token Fixes</h1>
+    
+    <div id="mathContent">
+        $$P(x) = \sum_{j=0}^{n} f(x_j) \cdot l_j(x)$$
+    </div>
+    
+    <div id="testResults"></div>
+    
+    <script>
+        // Test getCookie function
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+        
+        // Test API call
+        async function testAPI() {
+            const resultDiv = document.getElementById('testResults');
+            
+            try {
+                const response = await fetch('/api/interpolate/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        points: [[1, 2], [2, 3], [3, 5]]
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    resultDiv.innerHTML = `
+                        <h3>✅ API Test Successful!</h3>
+                        <p>Success: ${data.success}</p>
+                        <p>Polynomial degree: ${data.polynomial_degree}</p>
+                        <p>Original points: ${JSON.stringify(data.original_points)}</p>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `<h3>❌ API Test Failed</h3><p>Status: ${response.status}</p>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<h3>❌ API Test Error</h3><p>${error.message}</p>`;
+            }
+        }
+        
+        // Test MathJax
+        function testMathJax() {
+            if (typeof MathJax !== 'undefined') {
+                console.log('✅ MathJax loaded successfully');
+                return true;
+            } else {
+                console.log('❌ MathJax not loaded');
+                return false;
+            }
+        }
+        
+        // Run tests when page loads
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                const mathJaxWorking = testMathJax();
+                const resultDiv = document.getElementById('testResults');
+                
+                if (mathJaxWorking) {
+                    resultDiv.innerHTML += '<p>✅ MathJax is working</p>';
+                } else {
+                    resultDiv.innerHTML += '<p>❌ MathJax failed to load</p>';
+                }
+                
+                // Test API
+                testAPI();
+            }, 2000);
+        });
+    </script>
+</body>
+</html>

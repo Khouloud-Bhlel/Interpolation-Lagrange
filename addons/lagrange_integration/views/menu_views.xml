@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Main Menu -->
+    <menuitem id="menu_lagrange_main" 
+              name="Lagrange Interpolation" 
+              sequence="100"/>
+
+    <!-- Sub Menus -->
+    <menuitem id="menu_interpolation_sets" 
+              name="Interpolation Sets" 
+              parent="menu_lagrange_main" 
+              action="action_interpolation_set" 
+              sequence="10"/>
+
+    <menuitem id="menu_interpolation_results" 
+              name="Results" 
+              parent="menu_lagrange_main" 
+              action="action_interpolation_result" 
+              sequence="20"/>
+
+    <menuitem id="menu_interpolation_points" 
+              name="Points" 
+              parent="menu_lagrange_main" 
+              action="action_interpolation_point" 
+              sequence="30"/>
+
+</odoo>
