@@ -32,6 +32,24 @@ vercel whoami || {
 echo "🔧 Setting up Vercel project..."
 vercel --yes
 
+# Set up environment variables
+echo "🌍 Setting up environment variables..."
+echo "Setting up production environment variables in Vercel..."
+
+# Generate a secure SECRET_KEY for production
+SECRET_KEY=$(python3 -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())")
+
+# Set Vercel environment variables
+vercel env add SECRET_KEY production <<< "$SECRET_KEY"
+vercel env add DEBUG production <<< "False"
+vercel env add ALLOWED_HOSTS production <<< ".vercel.app,.now.sh"
+vercel env add CORS_ALLOWED_ORIGINS production <<< "https://yourdomain.com"
+vercel env add API_BASE_URL production <<< "https://yourapp.vercel.app/api"
+vercel env add FRONTEND_URL production <<< "https://yourfrontend.vercel.app"
+
+echo "✅ Environment variables set up for production."
+echo "⚠️  Please update CORS_ALLOWED_ORIGINS and other URLs with your actual domain names."
+
 # Get project details
 echo "📋 Getting project information..."
 echo "Your project details are now saved in .vercel/project.json"

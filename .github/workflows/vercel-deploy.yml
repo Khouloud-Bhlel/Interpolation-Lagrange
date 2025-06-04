@@ -43,9 +43,10 @@ jobs:
         
     - name: Run Django checks
       env:
-        SECRET_KEY: 'django-ci-test-key-not-for-production'
+        SECRET_KEY: 'django-ci-test-key-not-for-production-use-only-12345678901234567890'
         DEBUG: 'False'
         ALLOWED_HOSTS: 'localhost,127.0.0.1,.vercel.app,.now.sh'
+        CORS_ALLOWED_ORIGINS: 'https://localhost:3000,https://127.0.0.1:3000'
         DJANGO_SETTINGS_MODULE: 'lagrange_project.settings'
       run: |
         python manage.py check --deploy
@@ -59,9 +60,10 @@ jobs:
       
     - name: Build Project Artifacts
       env:
-        SECRET_KEY: 'django-ci-build-key-not-for-production'
+        SECRET_KEY: 'django-ci-build-key-not-for-production-use-only-12345678901234567890'
         DEBUG: 'False'
         ALLOWED_HOSTS: '.vercel.app,.now.sh'
+        CORS_ALLOWED_ORIGINS: 'https://localhost:3000,https://127.0.0.1:3000'
       run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
       
     - name: Deploy Project Artifacts to Vercel
