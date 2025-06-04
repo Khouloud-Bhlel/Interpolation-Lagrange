@@ -11,8 +11,18 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
-from decouple import config
 import os
+
+# Handle decouple import gracefully
+try:
+    from decouple import config
+except ImportError:
+    # Fallback if decouple is not available
+    def config(key, default=None, cast=None):
+        value = os.environ.get(key, default)
+        if cast and value is not None:
+            return cast(value)
+        return value
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -34,19 +44,13 @@ if os.environ.get('VERCEL'):
     ALLOWED_HOSTS.extend(['.vercel.app', '.now.sh'])
     DEBUG = False
     
-    # Ensure we have required environment variables for Vercel
-    if not config('SECRET_KEY', default=None):
-        # Generate a temporary secret key if none is provided
-        from django.core.management.utils import get_random_secret_key
-        SECRET_KEY = get_random_secret_key()
-    
-    # Database for Vercel (use SQLite for simplicity)
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': '/tmp/db.sqlite3',  # Use tmp directory on Vercel
-        }
-    }
+    # Ensure we have a proper secret key for Vercel
+    secret_key_env = os.environ.get('SECRET_KEY')
+    if not secret_key_env or len(secret_key_env) < 50:
+        # Use a secure fallback or generate one
+        SECRET_KEY = os.environ.get('SECRET_KEY', 'vercel-default-secret-key-not-for-production-use-only-12345678901234567890')
+    else:
+        SECRET_KEY = secret_key_env
 
 
 # Application definition
@@ -98,13 +102,23 @@ WSGI_APPLICATION = 'lagrange_project.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-# SQLite for development (no additional setup required)
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+# Default database configuration
+if os.environ.get('VERCEL'):
+    # Database for Vercel (use SQLite in tmp directory)
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': '/tmp/db.sqlite3',  # Use tmp directory on Vercel
+        }
     }
-}
+else:
+    # SQLite for development (no additional setup required)
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 # Uncomment below for PostgreSQL (make sure PostgreSQL is running)
 # DATABASES = {
@@ -235,8 +249,19 @@ REST_FRAMEWORK = {
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
-# WhiteNoise configuration for Vercel
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+# Static files directories for development
+if DEBUG:
+    STATICFILES_DIRS = [
+        os.path.join(BASE_DIR, 'static'),
+    ]
+
+# Static files storage configuration
+if DEBUG:
+    # Use default storage for development
+    STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
+else:
+    # WhiteNoise configuration for production/Vercel
+    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Media files
 MEDIA_URL = '/media/'

@@ -21,9 +21,23 @@ mkdir -p /tmp
 echo "Running migrations..."
 python manage.py migrate --noinput || echo "Migration failed, continuing..."
 
+# Copy favicon files to static directory
+echo "Copying favicon files..."
+mkdir -p static/images
+cp favicon_io/favicon.ico static/ 2>/dev/null || echo "favicon.ico not found"
+cp favicon_io/*.png static/images/ 2>/dev/null || echo "PNG favicons not found"
+cp favicon_io/site.webmanifest static/ 2>/dev/null || echo "site.webmanifest not found"
+
 # Collect static files
 echo "Collecting static files..."
 python manage.py collectstatic --noinput --clear
+
+# Copy favicon files to staticfiles directory (backup)
+echo "Copying favicon files to staticfiles..."
+mkdir -p staticfiles/images
+cp favicon_io/favicon.ico staticfiles/ 2>/dev/null || echo "favicon.ico not found"
+cp favicon_io/*.png staticfiles/images/ 2>/dev/null || echo "PNG favicons not found"
+cp favicon_io/site.webmanifest staticfiles/ 2>/dev/null || echo "site.webmanifest not found"
 
 # Create staticfiles_build directory for Vercel
 mkdir -p staticfiles_build
