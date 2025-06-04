@@ -11,28 +11,23 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
-import os
 from decouple import config
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+
+# Quick-start development settings - unsuitable for production
+# See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
+
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = config('SECRET_KEY', default='django-insecure-fallback-key-for-development-only')
+SECRET_KEY = config('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = config('DEBUG', default=False, cast=bool)
+DEBUG = config('DEBUG', default=True, cast=bool)
 
-# Vercel and production hosts
-ALLOWED_HOSTS = [
-    'localhost',
-    '127.0.0.1',
-    '.vercel.app',
-    '.now.sh',
-] + config('ALLOWED_HOSTS', default='').split(',')
-
-# Remove empty strings
-ALLOWED_HOSTS = [host.strip() for host in ALLOWED_HOSTS if host.strip()]
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='').split(',')
 
 
 # Application definition
@@ -141,28 +136,24 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# CORS settings for Vercel deployment
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "http://localhost:8000",
-    "http://127.0.0.1:8000",
-] + config('CORS_ALLOWED_ORIGINS', default='').split(',')
-
-# Remove empty strings
-CORS_ALLOWED_ORIGINS = [origin.strip() for origin in CORS_ALLOWED_ORIGINS if origin.strip()]
-
+# CORS settings
+CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS', default='').split(',')
 CORS_ALLOW_ALL_ORIGINS = DEBUG  # Only for development
 
-# Static files (CSS, JavaScript, Images)
-STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+# API Configuration
+API_BASE_URL = config('API_BASE_URL', default='http://localhost:8000/api')
+FRONTEND_URL = config('FRONTEND_URL', default='http://localhost:3000')
 
-# Media files
-MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+# Odoo Configuration
+ODOO_CONFIG = {
+    'host': config('ODOO_HOST', default='localhost'),
+    'port': config('ODOO_PORT', default=8069, cast=int),
+    'database': config('ODOO_DB', default='odoo_db'),
+    'user': config('ODOO_USERNAME', default='admin'),
+    'password': config('ODOO_ADMIN_PASSWORD', default='admin123'),
+}
 
-# REST Framework Configuration
+# Rest Framework settings
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.AllowAny',
@@ -174,17 +165,63 @@ REST_FRAMEWORK = {
     'PAGE_SIZE': 20
 }
 
-# API Configuration
-API_BASE_URL = config('API_BASE_URL', default='http://localhost:8000/api')
-FRONTEND_URL = config('FRONTEND_URL', default='http://localhost:3000')
+AUTH_PASSWORD_VALIDATORS = [
+    {
+        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+    },
+]
 
-# Odoo Configuration (optional for Vercel deployment)
-ODOO_CONFIG = {
-    'host': config('ODOO_HOST', default='localhost'),
-    'port': config('ODOO_PORT', default=8069, cast=int),
-    'database': config('ODOO_DB', default='odoo_db'),
-    'user': config('ODOO_USERNAME', default='admin'),
-    'password': config('ODOO_ADMIN_PASSWORD', default='admin123'),
+
+# Internationalization
+# https://docs.djangoproject.com/en/5.2/topics/i18n/
+
+LANGUAGE_CODE = 'en-us'
+
+TIME_ZONE = 'UTC'
+
+USE_I18N = True
+
+USE_TZ = True
+
+
+# Static files (CSS, JavaScript, Images)
+# https://docs.djangoproject.com/en/5.2/howto/static-files/
+
+STATIC_URL = 'static/'
+
+# Default primary key field type
+# https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
+
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# REST Framework Configuration
+REST_FRAMEWORK = {
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.AllowAny',
+    ],
+    'DEFAULT_RENDERER_CLASSES': [
+        'rest_framework.renderers.JSONRenderer',
+    ],
 }
+
+# CORS Configuration
+CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS', default='').split(',')
+CORS_ALLOW_ALL_ORIGINS = config('DEBUG', default=True, cast=bool)
+
+# Static files
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
+# Media files
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 
