@@ -1,21 +1,50 @@
 #!/bin/bash
 
 # Build script for Vercel - Optimized for file count limits
-echo "Building for Vercel..."
+echo "=== Building for Vercel ==="
 
 # Set environment variables for build
 export VERCEL=1
 export PYTHON_PATH=/var/task
-
-# Install dependencies (use minimal requirements for Vercel)
-echo "Installing dependencies..."
-pip install -r requirements-minimal.txt
-
-# Set Django settings module
 export DJANGO_SETTINGS_MODULE=lagrange_project.settings
 
+# Debug information
+echo "Working directory: $(pwd)"
+echo "Python version: $(python --version)"
+echo "Available files: $(ls -la)"
+
+# Install dependencies (use Vercel-optimized requirements)
+echo "Installing dependencies..."
+if [ -f "requirements-vercel.txt" ]; then
+    echo "Using Vercel-specific requirements..."
+    pip install -r requirements-vercel.txt
+elif [ -f "requirements-minimal.txt" ]; then
+    echo "Using minimal requirements..."
+    pip install -r requirements-minimal.txt
+else
+    echo "Using standard requirements..."
+    pip install -r requirements.txt
+fi
+
+# Verify Django installation
+echo "Verifying Django installation..."
+python -c "import django; print(f'Django version: {django.VERSION}')" || exit 1
+
 # Create temporary database directory
+echo "Setting up temporary database..."
 mkdir -p /tmp
+
+# Test Django configuration before running migrations
+echo "Testing Django configuration..."
+python -c "
+import os
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'lagrange_project.settings')
+import django
+django.setup()
+from django.conf import settings
+print(f'Settings configured: {settings.configured}')
+print(f'Database engine: {settings.DATABASES[\"default\"][\"ENGINE\"]}')
+" || echo "Django configuration test failed"
 
 # Run migrations (with error handling)
 echo "Running migrations..."

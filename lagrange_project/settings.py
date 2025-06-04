@@ -41,6 +41,7 @@ ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1').split(','
 
 # Vercel deployment settings
 if os.environ.get('VERCEL'):
+    print("[VERCEL DEBUG] Configuring for Vercel environment...")
     ALLOWED_HOSTS.extend(['.vercel.app', '.now.sh'])
     DEBUG = False
     
@@ -51,6 +52,9 @@ if os.environ.get('VERCEL'):
         SECRET_KEY = os.environ.get('SECRET_KEY', 'vercel-default-secret-key-not-for-production-use-only-12345678901234567890')
     else:
         SECRET_KEY = secret_key_env
+    
+    print(f"[VERCEL DEBUG] Allowed hosts: {ALLOWED_HOSTS}")
+    print(f"[VERCEL DEBUG] Debug mode: {DEBUG}")
 
 
 # Application definition
@@ -194,7 +198,8 @@ CORS_ALLOWED_HEADERS = [
 ]
 
 # Production Security Settings
-if not DEBUG:
+if not DEBUG and not os.environ.get('VERCEL'):
+    # Only enable strict security settings for non-Vercel production
     # HTTPS Security
     SECURE_SSL_REDIRECT = True
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
@@ -219,6 +224,13 @@ if not DEBUG:
     
     # Referrer Policy
     SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
+
+elif os.environ.get('VERCEL'):
+    # Vercel-specific security settings (less strict for initial deployment)
+    print("[VERCEL DEBUG] Applying Vercel-specific security settings...")
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    SECURE_BROWSER_XSS_FILTER = True
 
 # API Configuration
 API_BASE_URL = config('API_BASE_URL', default='http://localhost:8000/api')
