@@ -42,6 +42,11 @@ jobs:
         pip install whitenoise==6.6.0
         
     - name: Run Django checks
+      env:
+        SECRET_KEY: 'django-ci-test-key-not-for-production'
+        DEBUG: 'False'
+        ALLOWED_HOSTS: 'localhost,127.0.0.1,.vercel.app,.now.sh'
+        DJANGO_SETTINGS_MODULE: 'lagrange_project.settings'
       run: |
         python manage.py check --deploy
         python manage.py collectstatic --noinput --dry-run
@@ -53,6 +58,10 @@ jobs:
       run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
       
     - name: Build Project Artifacts
+      env:
+        SECRET_KEY: 'django-ci-build-key-not-for-production'
+        DEBUG: 'False'
+        ALLOWED_HOSTS: '.vercel.app,.now.sh'
       run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
       
     - name: Deploy Project Artifacts to Vercel

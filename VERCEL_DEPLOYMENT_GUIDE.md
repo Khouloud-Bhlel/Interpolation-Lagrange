@@ -43,12 +43,32 @@
 In your GitHub repository, go to Settings > Secrets and variables > Actions, then add:
 
 1. **VERCEL_TOKEN**: Your Vercel token from Step 2
-2. **VERCEL_ORG_ID**: Your organization ID
+2. **VERCEL_ORG_ID**: Your organization ID  
 3. **VERCEL_PROJECT_ID**: Your project ID
+
+### How to Add GitHub Secrets:
+1. Go to your GitHub repository
+2. Click on "Settings" tab
+3. In the left sidebar, click "Secrets and variables" > "Actions"
+4. Click "New repository secret" for each secret
+5. Add the name and value for each secret
 
 ## Step 4: Configure Environment Variables in Vercel
 
 1. Go to your Vercel project dashboard
+2. Navigate to Settings > Environment Variables
+3. Add the following variables:
+
+**Required Environment Variables:**
+- `SECRET_KEY`: Generate a new Django secret key (use https://djecrety.ir/)
+- `DEBUG`: Set to `False` for production
+- `ALLOWED_HOSTS`: Your domain names (e.g., `your-app.vercel.app`)
+
+**Optional Environment Variables:**
+- `ODOO_URL`: If using Odoo integration
+- `ODOO_DB`: Odoo database name
+- `ODOO_USERNAME`: Odoo username
+- `ODOO_PASSWORD`: Odoo password
 2. Navigate to Settings > Environment Variables
 3. Add the following variables for Production:
 
