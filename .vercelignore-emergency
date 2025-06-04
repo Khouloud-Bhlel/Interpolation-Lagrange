@@ -1,0 +1,74 @@
+# EMERGENCY VERCEL IGNORE - EXCLUDE EVERYTHING EXCEPT ESSENTIALS
+
+# Exclude all favicon files (too many files)
+favicon_io/
+
+# Exclude all requirement files except one
+requirements*.txt
+!requirements-emergency.txt
+
+# Exclude all shell scripts
+*.sh
+
+# Exclude all environment files
+.env*
+
+# Exclude all test files
+test_*.py
+*_test.py
+
+# Exclude docker and setup
+docker-compose.yml
+setup-*.sh
+get-*.sh
+init-*.sh
+
+# Exclude alternative vercel configs
+vercel-*.json
+
+# Exclude git and vercel meta
+.git/
+.github/
+.vercel/
+.gitignore
+
+# Exclude migrations (will recreate on deploy)
+*/migrations/
+!*/migrations/__init__.py
+
+# Exclude management commands (not essential)
+*/management/
+
+# Exclude Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Exclude static and media
+static/
+staticfiles/
+media/
+
+# Exclude virtual environments
+*env/
+venv/
+
+# Exclude documentation and guides
+*.md
+*.pdf
+*.txt
+!requirements-emergency.txt
+
+# Exclude database
+*.sqlite3
+*.db
+
+# Exclude templates (temporarily for emergency deploy)
+*/templates/
+
+# Exclude addons and config
+addons/
+config/
+
+# Exclude test directory
+test/

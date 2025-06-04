@@ -257,23 +257,31 @@ REST_FRAMEWORK = {
     'PAGE_SIZE': 20
 }
 
-# Static files configuration
+# Static files configuration (simplified for Vercel)
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
-# Static files directories for development
-if DEBUG:
-    STATICFILES_DIRS = [
-        os.path.join(BASE_DIR, 'static'),
-    ]
-
-# Static files storage configuration
-if DEBUG:
-    # Use default storage for development
+# For Vercel deployment, simplify static files handling
+if os.environ.get('VERCEL'):
+    # Simplified static files for Vercel
+    STATICFILES_DIRS = []
+    # Don't use WhiteNoise on Vercel to reduce complexity
     STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
+    print("[VERCEL DEBUG] Using simplified static files configuration")
 else:
-    # WhiteNoise configuration for production/Vercel
-    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+    # Static files directories for development
+    if DEBUG:
+        STATICFILES_DIRS = [
+            os.path.join(BASE_DIR, 'static'),
+        ]
+    
+    # Static files storage configuration
+    if DEBUG:
+        # Use default storage for development
+        STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
+    else:
+        # WhiteNoise configuration for production (non-Vercel)
+        STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Media files
 MEDIA_URL = '/media/'

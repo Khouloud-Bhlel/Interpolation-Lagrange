@@ -22,9 +22,9 @@ pip install django-cors-headers==4.3.1 || exit 1
 pip install python-decouple==3.8 || exit 1
 pip install numpy==1.26.4 || exit 1
 pip install requests==2.31.0 || exit 1
-pip install whitenoise==6.6.0 || exit 1
+# Skip whitenoise for Vercel deployment
 
-echo "Core dependencies installed successfully"
+echo "Core dependencies installed successfully (whitenoise skipped for Vercel)"
 
 # Verify Django installation
 echo "Verifying Django installation..."
@@ -54,25 +54,26 @@ python manage.py migrate --noinput || echo "Migration failed, continuing..."
 echo "Copying essential favicon files..."
 mkdir -p static/images
 cp favicon_io/favicon.ico static/ 2>/dev/null || echo "favicon.ico not found"
-cp favicon_io/favicon-32x32.png static/images/ 2>/dev/null || echo "favicon-32x32.png not found"
-cp favicon_io/apple-touch-icon.png static/images/ 2>/dev/null || echo "apple-touch-icon.png not found"
+cp favicon_io/site.webmanifest static/ 2>/dev/null || echo "site.webmanifest not found"
 
-# Collect static files with optimization
-echo "Collecting static files..."
+# Collect static files with ultra-minimal approach
+echo "Collecting static files (minimal for Vercel limits)..."
 python manage.py collectstatic --noinput --clear
 
-# Remove unnecessary static files to reduce file count
-echo "Optimizing static files..."
-# Remove admin static files for production (save space)
-rm -rf staticfiles/admin/css/vendor/ 2>/dev/null || true
-rm -rf staticfiles/admin/js/vendor/jquery/ 2>/dev/null || true
-# Keep only essential favicon files
-find staticfiles/images/ -name "*.png" -not -name "favicon-32x32.png" -not -name "apple-touch-icon.png" -delete 2>/dev/null || true
-
-# Create optimized staticfiles_build directory for Vercel
-echo "Creating optimized build directory..."
+# Create ultra-minimal staticfiles_build directory
+echo "Creating ultra-minimal build directory..."
+rm -rf staticfiles_build
 mkdir -p staticfiles_build
-cp -r staticfiles/* staticfiles_build/ 2>/dev/null || echo "No static files to copy"
+
+# Only copy essential files to stay under Vercel limits
+echo "Copying only essential static files..."
+# Copy favicon and manifest only
+cp staticfiles/favicon.ico staticfiles_build/ 2>/dev/null || echo "No favicon.ico"
+cp staticfiles/site.webmanifest staticfiles_build/ 2>/dev/null || echo "No webmanifest"
+
+# Skip ALL admin and rest_framework files to drastically reduce file count
+echo "Skipping admin and rest_framework static files to reduce deployment size"
+echo "Essential files only: favicon.ico, site.webmanifest"
 
 # Final verification
 echo "=== Build Verification ==="
