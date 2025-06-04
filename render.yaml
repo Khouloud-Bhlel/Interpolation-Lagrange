@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: lagrange-animator
+    runtime: python3
+    buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate
+    startCommand: gunicorn lagrange_project.wsgi:application
+    envVars:
+      - key: DEBUG
+        value: False
+      - key: SECRET_KEY
+        generateValue: true
+      - key: WEB_CONCURRENCY
+        value: 4
+    disk:
+      name: lagrange-disk
+      mountPath: /opt/render/project/src
+      sizeGB: 1

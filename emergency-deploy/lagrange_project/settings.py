@@ -56,34 +56,6 @@ if os.environ.get('VERCEL'):
     print(f"[VERCEL DEBUG] Allowed hosts: {ALLOWED_HOSTS}")
     print(f"[VERCEL DEBUG] Debug mode: {DEBUG}")
 
-# Railway deployment settings
-if os.environ.get('RAILWAY_ENVIRONMENT'):
-    print("[RAILWAY DEBUG] Configuring for Railway environment...")
-    # Add Railway-specific domains
-    ALLOWED_HOSTS.extend(['.railway.app', '.up.railway.app'])
-    
-    # Add the specific Railway public domain
-    railway_domain = os.environ.get('RAILWAY_PUBLIC_DOMAIN')
-    if railway_domain:
-        ALLOWED_HOSTS.append(railway_domain)
-        print(f"[RAILWAY DEBUG] Added Railway domain: {railway_domain}")
-    
-    DEBUG = False
-    
-    # Railway provides PORT environment variable
-    PORT = int(os.environ.get('PORT', 8000))
-    
-    # Use Railway's database URL if provided
-    DATABASE_URL = os.environ.get('DATABASE_URL')
-    if DATABASE_URL:
-        import dj_database_url
-        DATABASES = {
-            'default': dj_database_url.parse(DATABASE_URL)
-        }
-    
-    print(f"[RAILWAY DEBUG] Allowed hosts: {ALLOWED_HOSTS}")
-    print(f"[RAILWAY DEBUG] Debug mode: {DEBUG}")
-    print(f"[RAILWAY DEBUG] Port: {PORT}")
 
 # Application definition
 
@@ -143,22 +115,6 @@ if os.environ.get('VERCEL'):
             'NAME': '/tmp/db.sqlite3',  # Use tmp directory on Vercel
         }
     }
-elif os.environ.get('RAILWAY_ENVIRONMENT'):
-    # Database for Railway (use DATABASE_URL if provided)
-    DATABASE_URL = os.environ.get('DATABASE_URL')
-    if DATABASE_URL:
-        import dj_database_url
-        DATABASES = {
-            'default': dj_database_url.parse(DATABASE_URL)
-        }
-    else:
-        # Fallback to SQLite in development
-        DATABASES = {
-            'default': {
-                'ENGINE': 'django.db.backends.sqlite3',
-                'NAME': BASE_DIR / 'db.sqlite3',
-            }
-        }
 else:
     # SQLite for development (no additional setup required)
     DATABASES = {
@@ -226,13 +182,6 @@ else:
         "http://127.0.0.1:3000",
         "https://localhost:3000",
     ]
-
-# Add Railway domain to CORS if in Railway environment
-if os.environ.get('RAILWAY_ENVIRONMENT'):
-    railway_domain = os.environ.get('RAILWAY_PUBLIC_DOMAIN')
-    if railway_domain:
-        CORS_ALLOWED_ORIGINS.append(f"https://{railway_domain}")
-        print(f"[RAILWAY DEBUG] Added CORS origin: https://{railway_domain}")
 
 CORS_ALLOW_ALL_ORIGINS = DEBUG  # Only for development
 CORS_ALLOW_CREDENTIALS = True
